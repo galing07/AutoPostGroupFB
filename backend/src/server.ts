@@ -10,7 +10,8 @@ import { subscriptionRouter } from './routes/subscription.js';
 const app = express();
 const port = Number(process.env.PORT || 8080);
 
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || true, credentials: true }));
+const allowedOrigin = process.env.FRONTEND_ORIGIN === '*' ? true : (process.env.FRONTEND_ORIGIN || true);
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {

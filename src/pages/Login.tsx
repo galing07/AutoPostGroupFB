@@ -14,17 +14,18 @@ const PLANS: PricingPlan[] = [
 const planIcons = [<Zap key="z" className="h-6 w-6" />, <Star key="s" className="h-6 w-6" />, <Crown key="c" className="h-6 w-6" />];
 
 export function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('2months');
   const [order, setOrder] = useState<SePayOrder | null>(null);
   const [payment, setPayment] = useState<SePayPaymentInfo | null>(null);
   const [polling, setPolling] = useState(false);
-  const { login, register, user, hasActiveSubscription, logout, subscriptionEndsAt, refreshSubscription } = useAuthStore();
+  const { login, register, forgotPassword, user, hasActiveSubscription, logout, subscriptionEndsAt, refreshSubscription } = useAuthStore();
 
   const active = hasActiveSubscription();
 
@@ -53,11 +54,15 @@ export function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
       if (mode === 'login') {
         await login(email, password);
+      } else if (mode === 'forgot') {
+        const result = await forgotPassword(email);
+        setSuccess(result.message);
       } else {
         await register(name, email, password);
       }
@@ -242,8 +247,8 @@ export function LoginPage() {
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.07] p-7 shadow-2xl shadow-blue-950/40 backdrop-blur-2xl">
           <div className="mb-8">
             <p className="text-sm uppercase tracking-[0.35em] text-blue-300">Secure Access</p>
-            <h2 className="mt-3 text-3xl font-bold">{mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}</h2>
-            <p className="mt-2 text-sm text-slate-400">Vui lòng đăng nhập</p>
+            <h2 className="mt-3 text-3xl font-bold">{mode === 'login' ? 'Đăng nhập' : mode === 'forgot' ? 'Khôi phục mật khẩu' : 'Tạo tài khoản'}</h2>
+            <p className="mt-2 text-sm text-slate-400">Vui lòng {mode === 'login' ? 'đăng nhập' : mode === 'forgot' ? 'nhập email của bạn' : 'đăng nhập'}</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -257,20 +262,30 @@ export function LoginPage() {
               <span className="mb-2 block text-sm text-slate-300">Email</span>
               <input className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 outline-none ring-blue-400/40 transition focus:ring-4" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="khachhang@email.com" type="email" />
             </label>
-            <label className="block">
-              <span className="mb-2 block text-sm text-slate-300">Mật khẩu</span>
-              <input className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 outline-none ring-blue-400/40 transition focus:ring-4" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" type="password" />
-            </label>
+            
+            {mode !== 'forgot' && (
+              <label className="block">
+                <span className="mb-2 block text-sm text-slate-300">Mật khẩu</span>
+                <input className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 outline-none ring-blue-400/40 transition focus:ring-4" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" type="password" />
+              </label>
+            )}
+
+            {mode === 'login' && (
+              <div className="flex justify-end">
+                <button type="button" className="text-sm text-blue-400 hover:text-blue-300 transition" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}>Quên mật khẩu?</button>
+              </div>
+            )}
 
             {error && <div className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
+            {success && <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{success}</div>}
 
             <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 px-5 py-4 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60">
-              {loading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'} <ArrowRight className="h-4 w-4" />
+              {loading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : mode === 'forgot' ? 'Gửi mật khẩu mới' : 'Tạo tài khoản'} <ArrowRight className="h-4 w-4" />
             </button>
           </form>
 
-          <button className="mt-5 w-full text-sm text-slate-300 hover:text-white" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
-            {mode === 'login' ? 'Chưa có tài khoản? Đăng ký' : 'Đã có tài khoản? Đăng nhập'}
+          <button className="mt-5 w-full text-sm text-slate-300 hover:text-white" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}>
+            {mode === 'login' ? 'Chưa có tài khoản? Đăng ký' : mode === 'forgot' ? 'Quay lại đăng nhập' : 'Đã có tài khoản? Đăng nhập'}
           </button>
         </section>
       </main>

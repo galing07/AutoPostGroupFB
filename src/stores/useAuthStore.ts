@@ -39,6 +39,7 @@ export interface AuthState {
   subscriptionEndsAt: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   refreshSubscription: () => Promise<void>;
   validateLicense: () => Promise<boolean>;
@@ -98,6 +99,19 @@ export const useAuthStore = create<AuthState>()(
           token: data.token,
           ...applySubscription(data.subscription),
         });
+      },
+
+      forgotPassword: async (email: string) => {
+        if (!email.trim()) {
+          throw new Error('Vui lòng nhập email');
+        }
+
+        const data = await apiRequest<{ success: boolean; message: string }>('/auth/forgot-password', {
+          method: 'POST',
+          body: JSON.stringify({ email }),
+        });
+
+        return data;
       },
 
       logout: () => {

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, signAccessToken, type AuthRequest } from '../middleware/auth.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 
 export const authRouter = Router();
 
@@ -25,13 +26,24 @@ authRouter.post('/register', async (req, res, next) => {
       return res.status(409).json({ success: false, error: 'Email đã tồn tại' });
     }
 
+    const now = new Date();
+    const trialDays = 3;
+    const endsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+
     const passwordHash = await bcrypt.hash(body.password, 12);
     const user = await prisma.user.create({
       data: {
         email: body.email,
         name: body.name,
         passwordHash,
-        subscription: { create: { status: 'inactive' } },
+        subscription: { 
+          create: { 
+            status: 'active',
+            plan: 'trial',
+            startsAt: now,
+            endsAt: endsAt
+          } 
+        },
       },
       include: { subscription: true },
     });
@@ -54,6 +66,40 @@ authRouter.post('/login', async (req, res, next) => {
 
     const token = signAccessToken({ id: user.id, email: user.email, role: user.role });
     return res.json({ success: true, token, user: sanitizeUser(user), subscription: normalizeSubscription(user.subscription) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+authRouter.post('/forgot-password', async (req, res, next) => {
+  try {
+    const body = forgotPasswordSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email: body.email } });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản với email này' });
+    }
+
+    // Tạo mật khẩu ngẫu nhiên 8 ký tự
+    const newPassword = Math.random().toString(36).slice(-8);
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash }
+    });
+
+    try {
+      await sendPasswordResetEmail(user.email, newPassword);
+      return res.json({ success: true, message: 'Mật khẩu mới đã được gửi đến email của bạn' });
+    } catch (error) {
+      console.error('Lỗi gửi email:', error);
+      return res.status(500).json({ success: false, error: 'Không thể gửi email lúc này. Vui lòng liên hệ hỗ trợ hoặc cấu hình email server.' });
+    }
   } catch (err) {
     next(err);
   }
