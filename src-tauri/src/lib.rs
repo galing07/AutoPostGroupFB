@@ -12,36 +12,30 @@ async fn run_automation(
     payload: String,
 ) -> Result<String, String> {
     // Try to find bundled automation script first.
-    // Tauri may place resources as either resource/automation/index.js
-    // or directly as resource/index.js depending on bundle layout.
-    let resource_dir = app.path().resource_dir().unwrap_or_default();
-    let cwd = std::env::current_dir().unwrap_or_default();
-    let candidates = [
-        resource_dir.join("automation").join("index.js"),
-        resource_dir.join("index.js"),
-        cwd.join("automation").join("index.js"),
-        cwd.join("..").join("automation").join("index.js"),
-    ];
+    // On Windows NSIS builds, Tauri v2 places resources under `_up_` next to the exe:
+    //   C:\Program Files\AutoPost FB AI Pro\_up_\automation\index.js
+    // In dev, it may still be available from the project working directory.
+    let script_path = find_automation_script(&app).ok_or_else(|| {
+        let attempted = automation_script_candidates(&app)
+            .iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect::<Vec<_>>()
+            .join(" | ");
+        format!("Không tìm thấy automation/index.js. Đã thử: {}", attempted)
+    })?;
 
-    let script = candidates
-        .iter()
-        .find(|p| p.exists())
-        .map(|p| p.to_string_lossy().to_string())
-        .ok_or_else(|| {
-            let attempted = candidates
-                .iter()
-                .map(|p| p.to_string_lossy().to_string())
-                .collect::<Vec<_>>()
-                .join(" | ");
-            format!("Không tìm thấy automation/index.js. Đã thử: {}", attempted)
-        })?;
+    let automation_dir = script_path
+        .parent()
+        .ok_or_else(|| "Không xác định được thư mục automation".to_string())?
+        .to_path_buf();
 
-    // Spawn node process
+    // Spawn node process from the automation directory so local dependencies resolve correctly.
     let output = StdCommand::new("node")
-        .arg(&script)
+        .arg(&script_path)
         .arg(&action)
         .arg(&payload)
-        .env("NODE_PATH", find_node_modules())
+        .current_dir(&automation_dir)
+        .env("NODE_PATH", find_node_modules(&automation_dir))
         .output()
         .map_err(|e| format!("Không thể chạy node: {}", e))?;
 
@@ -55,14 +49,34 @@ async fn run_automation(
     Ok(stdout)
 }
 
+fn automation_script_candidates(app: &tauri::AppHandle) -> Vec<std::path::PathBuf> {
+    let resource_dir = app.path().resource_dir().unwrap_or_default();
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
+        .unwrap_or_default();
+
+    vec![
+        resource_dir.join("automation").join("index.js"),
+        resource_dir.join("_up_").join("automation").join("index.js"),
+        resource_dir.join("index.js"),
+        exe_dir.join("automation").join("index.js"),
+        exe_dir.join("_up_").join("automation").join("index.js"),
+        cwd.join("automation").join("index.js"),
+        cwd.join("_up_").join("automation").join("index.js"),
+        cwd.join("..").join("automation").join("index.js"),
+    ]
+}
+
+fn find_automation_script(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    automation_script_candidates(app).into_iter().find(|p| p.exists())
+}
+
 // Find node_modules path for automation dependencies
-fn find_node_modules() -> String {
+fn find_node_modules(automation_dir: &std::path::Path) -> String {
     let paths = [
-        // Relative to working directory
-        std::env::current_dir()
-            .unwrap_or_default()
-            .join("automation")
-            .join("node_modules"),
+        automation_dir.join("node_modules"),
         // Home directory fallback
         dirs::home_dir()
             .unwrap_or_default()
