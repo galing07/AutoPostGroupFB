@@ -72,7 +72,7 @@ export function AutoPost() {
     toast.success('Đã bắt đầu Auto Post!');
 
     try {
-      await executeAction('auto_post', {
+      const response = await executeAction('auto_post', {
         groups: groupsToPost.map((g) => ({ id: g.id, name: g.name, url: g.url })),
         content: postContent,
         mediaFiles,
@@ -85,6 +85,10 @@ export function AutoPost() {
         onProgress: (index, _total, groupName) => updateProgress(index, groupName),
         onResult: (result) => addResult({ ...result, timestamp: result.timestamp || new Date().toISOString() }),
       });
+
+      if (!response.success) {
+        throw new Error(response.error || response.message || 'Automation chạy thất bại nhưng không trả về lỗi chi tiết');
+      }
 
       if (useAutoPostStore.getState().status === 'running') {
         setStatus('completed');
