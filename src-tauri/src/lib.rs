@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose, Engine as _};
 use std::fs;
-use std::process::Command as StdCommand;
+use std::process::{Command as StdCommand, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
@@ -11,6 +11,9 @@ async fn run_automation(
     action: String,
     payload: String,
 ) -> Result<String, String> {
+    if action == "open_chrome" {
+        return open_chrome_native(payload);
+    }
     // Try to find bundled automation script first.
     // On Windows NSIS builds, Tauri v2 places resources under `_up_` next to the exe:
     //   C:\Program Files\AutoPost FB AI Pro\_up_\automation\index.js
@@ -96,6 +99,105 @@ fn find_node_modules(automation_dir: &std::path::Path) -> String {
     }
 
     String::new()
+}
+
+fn open_chrome_native(payload: String) -> Result<String, String> {
+    let payload_json: serde_json::Value = serde_json::from_str(&payload).unwrap_or_default();
+    let custom_chrome_path = payload_json
+        .get("chromePath")
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(std::path::PathBuf::from);
+
+    let chrome_path = custom_chrome_path
+        .or_else(find_chrome_binary)
+        .ok_or_else(|| {
+            "Không tìm thấy Google Chrome. Vui lòng cài Chrome hoặc nhập đúng Chrome Path trong Cài đặt."
+                .to_string()
+        })?;
+
+    if !chrome_path.exists() {
+        return Err(format!(
+            "Chrome Path không tồn tại: {}",
+            chrome_path.to_string_lossy()
+        ));
+    }
+
+    let profile_dir = dirs::home_dir()
+        .unwrap_or_default()
+        .join(".autopost")
+        .join("chrome-profile");
+    fs::create_dir_all(&profile_dir).map_err(|e| format!("Không thể tạo Chrome profile: {}", e))?;
+
+    StdCommand::new(&chrome_path)
+        .arg(format!("--user-data-dir={}", profile_dir.to_string_lossy()))
+        .arg("--no-first-run")
+        .arg("--no-default-browser-check")
+        .arg("https://www.facebook.com")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| {
+            format!(
+                "Không thể mở Chrome tại {}: {}",
+                chrome_path.to_string_lossy(),
+                e
+            )
+        })?;
+
+    Ok(format!(
+        "{{\"type\":\"IPC_RESPONSE\",\"success\":true,\"isLoggedIn\":false,\"profileDir\":\"{}\",\"message\":\"Chrome đã mở — Vui lòng đăng nhập Facebook trong cửa sổ vừa mở\"}}\n",
+        json_escape(&profile_dir.to_string_lossy())
+    ))
+}
+
+fn find_chrome_binary() -> Option<std::path::PathBuf> {
+    let mut candidates = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        candidates.push(std::path::PathBuf::from(
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        ));
+        candidates.push(std::path::PathBuf::from(
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        ));
+        if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+            candidates.push(
+                std::path::PathBuf::from(local_app_data)
+                    .join("Google")
+                    .join("Chrome")
+                    .join("Application")
+                    .join("chrome.exe"),
+            );
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        candidates.push(std::path::PathBuf::from(
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        ));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        candidates.push(std::path::PathBuf::from("/usr/bin/google-chrome"));
+        candidates.push(std::path::PathBuf::from("/usr/bin/google-chrome-stable"));
+        candidates.push(std::path::PathBuf::from("/usr/bin/chromium"));
+    }
+
+    candidates.into_iter().find(|path| path.exists())
+}
+
+fn json_escape(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
 }
 
 // Command: check if node and playwright are available
