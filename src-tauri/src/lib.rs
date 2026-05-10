@@ -4,6 +4,23 @@ use std::process::{Command as StdCommand, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
+// On Windows, std::fs::canonicalize() prepends the extended-length path prefix
+// "\\?\", e.g. "\\?\C:\Program Files\...\index.js".  Node.js v24 cannot handle
+// this prefix during its internal `realpathSync` call inside `resolveMainPath`,
+// causing it to try `lstat('C:')` which fails with EISDIR.
+// This helper canonicalizes and then strips the prefix.
+fn safe_normalize_path(p: &std::path::Path) -> std::path::PathBuf {
+    let canonical = p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    let s = canonical.to_string_lossy().to_string();
+    // Windows extended-length prefix is literally: \\?\
+    // In Rust string that's "\\\\?\\"
+    if s.starts_with("\\\\?\\") {
+        std::path::PathBuf::from(&s[4..])
+    } else {
+        canonical
+    }
+}
+
 // Rust command: run automation action via Node.js
 #[tauri::command]
 async fn run_automation(
@@ -18,7 +35,7 @@ async fn run_automation(
     // On Windows NSIS builds, Tauri v2 places resources under `_up_` next to the exe:
     //   C:\Program Files\AutoPost FB AI Pro\_up_\automation\index.js
     // In dev, it may still be available from the project working directory.
-    let script_path = find_automation_script(&app).ok_or_else(|| {
+    let raw_script_path = find_automation_script(&app).ok_or_else(|| {
         let attempted = automation_script_candidates(&app)
             .iter()
             .map(|p| p.to_string_lossy().to_string())
@@ -27,16 +44,16 @@ async fn run_automation(
         format!("Không tìm thấy automation/index.js. Đã thử: {}", attempted)
     })?;
 
-    // Canonicalize to resolve any `..`, symlinks, or relative components.
-    // This prevents Windows issues where a non-canonical path confuses Node.js.
-    let script_path = script_path
-        .canonicalize()
-        .unwrap_or(script_path);
+    // Normalize: resolve `..` / symlinks, then strip Windows \\?\ prefix.
+    let script_path = safe_normalize_path(&raw_script_path);
 
     let automation_dir = script_path
         .parent()
         .ok_or_else(|| "Không xác định được thư mục automation".to_string())?
         .to_path_buf();
+
+    // Also normalize automation_dir in case it has \\?\ prefix
+    let automation_dir = safe_normalize_path(&automation_dir);
 
     eprintln!("[automation] script_path = {}", script_path.display());
     eprintln!("[automation] automation_dir = {}", automation_dir.display());
@@ -44,8 +61,12 @@ async fn run_automation(
     // Spawn node process from the automation directory so local dependencies resolve correctly.
     let node_modules_path = find_node_modules(&automation_dir);
 
+    // Build the script path as a clean string for the node argument.
+    // This avoids any OS-specific path object quirks.
+    let script_path_str = script_path.to_string_lossy().to_string();
+
     let mut cmd = StdCommand::new("node");
-    cmd.arg(&script_path)
+    cmd.arg(&script_path_str)
         .arg(&action)
         .arg(&payload)
         .current_dir(&automation_dir);
@@ -54,8 +75,14 @@ async fn run_automation(
     // Setting NODE_PATH="" on Windows Node.js v24 causes it to resolve to the
     // drive root (e.g. "C:"), triggering EISDIR errors during module resolution.
     if !node_modules_path.is_empty() {
-        eprintln!("[automation] NODE_PATH = {}", node_modules_path);
-        cmd.env("NODE_PATH", &node_modules_path);
+        // Also strip \\?\ from NODE_PATH
+        let clean_node_path = if node_modules_path.starts_with("\\\\?\\") {
+            node_modules_path[4..].to_string()
+        } else {
+            node_modules_path.clone()
+        };
+        eprintln!("[automation] NODE_PATH = {}", clean_node_path);
+        cmd.env("NODE_PATH", &clean_node_path);
     } else {
         eprintln!("[automation] NODE_PATH not set (no node_modules found)");
         // Remove NODE_PATH from environment to avoid inheriting a bad value
@@ -83,16 +110,17 @@ async fn run_automation(
         };
 
         return Ok(format!(
-            "{{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"{}\"}}\n",
+            "{{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"{}\"  }}\n",
             json_escape(&detail)
         ));
     }
 
     if stdout.trim().is_empty() {
-        return Ok(
-            "{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"Automation không trả về dữ liệu. Có thể Node.js hoặc thư viện Playwright trên máy Windows đang lỗi.\"}\n"
-                .to_string(),
-        );
+        return Ok(format!(
+            "{{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"Automation không trả về dữ liệu. script={}, cwd={}\"}}\n",
+            json_escape(&script_path_str),
+            json_escape(&automation_dir.to_string_lossy())
+        ));
     }
 
     Ok(stdout)
