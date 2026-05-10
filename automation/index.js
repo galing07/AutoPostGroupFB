@@ -28,6 +28,33 @@ function sendResult(result) {
 // ═══════════════════════════════════════════════════════════════════
 // Chrome path auto-detection
 // ═══════════════════════════════════════════════════════════════════
+function normalizeChromePath(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, '');
+  if (!trimmed) return null;
+
+  // On Windows, path.resolve('C:\\...') is fine only when the complete path is present.
+  // Never resolve/check a bare drive like `C:` because fs.lstatSync('C:') can throw EISDIR.
+  if (process.platform === 'win32') {
+    if (/^[a-zA-Z]:$/.test(trimmed)) return null;
+    return trimmed.replace(/\//g, '\\');
+  }
+
+  return path.resolve(trimmed);
+}
+
+function isUsableChromeExecutable(filePath) {
+  if (!filePath || typeof filePath !== 'string') return false;
+  if (process.platform === 'win32' && /^[a-zA-Z]:$/.test(filePath.trim())) return false;
+
+  try {
+    return fs.existsSync(filePath) && fs.lstatSync(filePath).isFile();
+  } catch (err) {
+    sendLog('warning', `Không kiểm tra được Chrome path ${filePath}: ${err.message}`);
+    return false;
+  }
+}
+
 function findChromePath() {
   const platform = os.platform();
 
@@ -98,10 +125,7 @@ async function humanScroll(page) {
 
 // Build launch options with auto-detected Chrome
 function buildLaunchOptions(customChromePath) {
-  const rawChromePath = typeof customChromePath === 'string' && customChromePath.trim()
-    ? customChromePath.trim().replace(/^['"]|['"]$/g, '')
-    : findChromePath();
-  const chromePath = rawChromePath ? path.resolve(rawChromePath) : null;
+  const chromePath = normalizeChromePath(customChromePath) || normalizeChromePath(findChromePath());
 
   const options = {
     headless: false,
@@ -115,18 +139,16 @@ function buildLaunchOptions(customChromePath) {
     ],
   };
 
-  if (chromePath && fs.existsSync(chromePath) && fs.lstatSync(chromePath).isFile()) {
-    options.executablePath = chromePath;
-    sendLog('info', `Dùng Chrome executable: ${chromePath}`);
-  } else {
-    // Use Playwright's Chrome channel only when no valid executable path is available.
-    // Do not set both executablePath and channel because Windows can resolve channel to `C:`.
-    options.channel = 'chrome';
-    if (chromePath) {
-      sendLog('warning', `Chrome path không hợp lệ, thử dùng Playwright channel chrome: ${chromePath}`);
-    }
+  if (!isUsableChromeExecutable(chromePath)) {
+    throw new Error(
+      chromePath
+        ? `Chrome path không hợp lệ hoặc không phải file .exe: ${chromePath}`
+        : 'Không tìm thấy Google Chrome executable. Hãy nhập đúng Chrome Path trong Cài đặt.'
+    );
   }
 
+  options.executablePath = chromePath;
+  sendLog('info', `Dùng Chrome executable: ${chromePath}`);
   return options;
 }
 
