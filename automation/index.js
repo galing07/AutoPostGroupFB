@@ -312,23 +312,36 @@ async function fillFacebookComposer(page, text) {
 
 async function pasteTextToComposerFromClipboard(page, text) {
   if (!text || !text.trim()) return false;
-  if (process.platform !== 'darwin') {
-    throw new Error('Clipboard text paste native hiện chỉ hỗ trợ macOS');
+
+  const isMac = process.platform === 'darwin';
+  const isWin = process.platform === 'win32';
+
+  if (!isMac && !isWin) {
+    throw new Error('Clipboard text paste native chỉ hỗ trợ macOS và Windows');
   }
 
-  sendLog('warning', 'Thử fallback native: copy nội dung vào clipboard macOS rồi paste vào composer...');
+  sendLog('warning', `Thử fallback native: copy nội dung vào clipboard ${isMac ? 'macOS' : 'Windows'} rồi paste vào composer...`);
 
-  execFileSync('osascript', [
-    '-e',
-    `set the clipboard to ${JSON.stringify(text)}`,
-  ], { stdio: 'ignore' });
+  if (isMac) {
+    execFileSync('osascript', [
+      '-e',
+      `set the clipboard to ${JSON.stringify(text)}`,
+    ], { stdio: 'ignore' });
+  } else {
+    // Windows: use PowerShell Set-Clipboard
+    execFileSync('powershell', [
+      '-NoProfile', '-Command',
+      `Set-Clipboard -Value ${JSON.stringify(text)}`,
+    ], { stdio: 'ignore' });
+  }
 
+  const pasteKey = isMac ? 'Meta+V' : 'Control+V';
   const textbox = page.locator('[role="dialog"] [role="textbox"][contenteditable="true"], [role="dialog"] [contenteditable="true"]').first();
   await textbox.click({ timeout: 7000, force: true });
   await randomDelay(300, 700);
-  await page.keyboard.press('Meta+V');
+  await page.keyboard.press(pasteKey);
   await randomDelay(800, 1400);
-  sendLog('success', 'Đã dán nội dung vào composer bằng clipboard native macOS');
+  sendLog('success', `Đã dán nội dung vào composer bằng clipboard native ${isMac ? 'macOS' : 'Windows'}`);
   return true;
 }
 
@@ -367,28 +380,49 @@ async function pasteImageToComposerFromClipboard(page, imagePath) {
     throw new Error('Clipboard paste fallback chỉ hỗ trợ file ảnh');
   }
 
-  if (process.platform !== 'darwin') {
-    throw new Error('Clipboard paste native hiện chỉ hỗ trợ macOS');
+  const isMac = process.platform === 'darwin';
+  const isWin = process.platform === 'win32';
+
+  if (!isMac && !isWin) {
+    throw new Error('Clipboard paste native chỉ hỗ trợ macOS và Windows');
   }
 
-  sendLog('warning', 'Thử fallback native: copy ảnh vào clipboard macOS rồi paste vào composer...');
+  sendLog('warning', `Thử fallback native: copy ảnh vào clipboard ${isMac ? 'macOS' : 'Windows'} rồi paste vào composer...`);
 
   const absPath = path.resolve(imagePath);
   if (!fs.existsSync(absPath)) {
     throw new Error(`Không tìm thấy file ảnh để paste: ${absPath}`);
   }
 
-  // Native clipboard write via AppleScript (reliable even when FB filechooser DOM is unstable)
-  execFileSync('osascript', [
-    '-e',
-    `set the clipboard to (read (POSIX file "${absPath.replace(/"/g, '\\"')}") as JPEG picture)`,
-  ], { stdio: 'ignore' });
+  if (isMac) {
+    // Native clipboard write via AppleScript (reliable even when FB filechooser DOM is unstable)
+    execFileSync('osascript', [
+      '-e',
+      `set the clipboard to (read (POSIX file "${absPath.replace(/"/g, '\\"')}") as JPEG picture)`,
+    ], { stdio: 'ignore' });
+  } else {
+    // Windows: use PowerShell to copy image to clipboard
+    // [System.Drawing.Image] → Clipboard.SetImage()
+    const winPath = absPath.replace(/\//g, '\\');
+    const psScript = `
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$img = [System.Drawing.Image]::FromFile('${winPath.replace(/'/g, "''")}' )
+[System.Windows.Forms.Clipboard]::SetImage($img)
+$img.Dispose()
+`.trim();
+    execFileSync('powershell', [
+      '-NoProfile', '-Command', psScript,
+    ], { stdio: 'ignore' });
+  }
 
+  const pasteKey = isMac ? 'Meta+V' : 'Control+V';
   const textbox = page.locator('[role="dialog"] [role="textbox"][contenteditable="true"], [role="dialog"] [contenteditable="true"]').first();
   await textbox.click({ timeout: 7000, force: true });
   await randomDelay(300, 700);
-  await page.keyboard.press('Meta+V');
+  await page.keyboard.press(pasteKey);
   await randomDelay(3000, 5000);
+  sendLog('success', `Đã dán ảnh vào composer bằng clipboard native ${isMac ? 'macOS' : 'Windows'}`);
 }
 
 function getMimeType(filePath) {
@@ -417,14 +451,14 @@ async function uploadMediaToComposer(page, mediaFiles = []) {
   sendLog('info', `Đang upload ${existingFiles.length} ảnh/video...`);
 
   const firstImage = existingFiles.find((file) => /^image\//.test(getMimeType(file)));
-  if (firstImage && process.platform === 'darwin') {
+  if (firstImage && (process.platform === 'darwin' || process.platform === 'win32')) {
     try {
       await pasteImageToComposerFromClipboard(page, firstImage);
       const hasPreview = await hasComposerAttachmentPreview(page, 25000);
       if (!hasPreview) {
         throw new Error('Đã paste ảnh nhưng Facebook chưa hiển thị preview ảnh/video');
       }
-      sendLog('success', 'Đã dán ảnh vào composer bằng clipboard native macOS');
+      sendLog('success', `Đã dán ảnh vào composer bằng clipboard native ${process.platform === 'darwin' ? 'macOS' : 'Windows'}`);
       await randomDelay(4000, 7000);
       return;
     } catch (err) {
@@ -555,13 +589,13 @@ async function uploadMediaToComposer(page, mediaFiles = []) {
     }
   }
 
-  if (!uploaded) {
+  if (!uploaded && (process.platform === 'darwin' || process.platform === 'win32')) {
     const firstImage = existingFiles.find((file) => /^image\//.test(getMimeType(file)));
     if (firstImage) {
       try {
         await pasteImageToComposerFromClipboard(page, firstImage);
         uploaded = true;
-        sendLog('success', 'Đã dán ảnh vào composer bằng clipboard native macOS');
+        sendLog('success', `Đã dán ảnh vào composer bằng clipboard native ${process.platform === 'darwin' ? 'macOS' : 'Windows'}`);
       } catch (err) {
         lastError = err;
       }
