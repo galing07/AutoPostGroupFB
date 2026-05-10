@@ -127,14 +127,21 @@ function isProfileLockError(err) {
 function cleanupChromeSingletonFiles(profileDir) {
   const names = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
   for (const name of names) {
-    const target = path.join(profileDir, name);
+    const target = path.resolve(profileDir, name);
     try {
-      if (fs.existsSync(target) || fs.lstatSync(target).isSymbolicLink()) {
-        fs.rmSync(target, { force: true, recursive: true });
-        sendLog('info', `Đã dọn Chrome lock file: ${name}`);
+      if (!fs.existsSync(target)) continue;
+
+      const stat = fs.lstatSync(target);
+      if (stat.isDirectory()) {
+        sendLog('warning', `Bỏ qua Chrome lock vì là thư mục: ${target}`);
+        continue;
       }
-    } catch (_) {
-      // Ignore missing or permission errors; launch retry will report the real issue.
+
+      fs.rmSync(target, { force: true, recursive: true });
+      sendLog('info', `Đã dọn Chrome lock file: ${name}`);
+    } catch (err) {
+      sendLog('warning', `Không dọn được Chrome lock ${name}: ${err.message}`);
+      // Ignore missing, invalid path, or permission errors; launch retry will report the real issue.
     }
   }
 }
