@@ -98,7 +98,11 @@ async function humanScroll(page) {
 
 // Build launch options with auto-detected Chrome
 function buildLaunchOptions(customChromePath) {
-  const chromePath = customChromePath || findChromePath();
+  const rawChromePath = typeof customChromePath === 'string' && customChromePath.trim()
+    ? customChromePath.trim().replace(/^['"]|['"]$/g, '')
+    : findChromePath();
+  const chromePath = rawChromePath ? path.resolve(rawChromePath) : null;
+
   const options = {
     headless: false,
     viewport: { width: 1280, height: 800 },
@@ -110,12 +114,19 @@ function buildLaunchOptions(customChromePath) {
       '--no-default-browser-check',
     ],
   };
-  if (chromePath) {
+
+  if (chromePath && fs.existsSync(chromePath) && fs.lstatSync(chromePath).isFile()) {
     options.executablePath = chromePath;
+    sendLog('info', `Dùng Chrome executable: ${chromePath}`);
   } else {
-    // Fallback: use channel (requires playwright to have downloaded browser)
+    // Use Playwright's Chrome channel only when no valid executable path is available.
+    // Do not set both executablePath and channel because Windows can resolve channel to `C:`.
     options.channel = 'chrome';
+    if (chromePath) {
+      sendLog('warning', `Chrome path không hợp lệ, thử dùng Playwright channel chrome: ${chromePath}`);
+    }
   }
+
   return options;
 }
 
