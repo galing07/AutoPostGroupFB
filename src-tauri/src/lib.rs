@@ -49,6 +49,28 @@ async fn run_automation(
         eprintln!("[automation stderr] {}", stderr);
     }
 
+    if !output.status.success() {
+        let detail = if !stderr.trim().is_empty() {
+            stderr.trim().to_string()
+        } else if !stdout.trim().is_empty() {
+            stdout.trim().to_string()
+        } else {
+            format!("Node automation exited with status: {}", output.status)
+        };
+
+        return Ok(format!(
+            "{{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"{}\"}}\n",
+            json_escape(&detail)
+        ));
+    }
+
+    if stdout.trim().is_empty() {
+        return Ok(
+            "{\"type\":\"IPC_RESPONSE\",\"success\":false,\"error\":\"Automation không trả về dữ liệu. Có thể Node.js hoặc thư viện Playwright trên máy Windows đang lỗi.\"}\n"
+                .to_string(),
+        );
+    }
+
     Ok(stdout)
 }
 
