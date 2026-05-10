@@ -27,18 +27,42 @@ async fn run_automation(
         format!("Không tìm thấy automation/index.js. Đã thử: {}", attempted)
     })?;
 
+    // Canonicalize to resolve any `..`, symlinks, or relative components.
+    // This prevents Windows issues where a non-canonical path confuses Node.js.
+    let script_path = script_path
+        .canonicalize()
+        .unwrap_or(script_path);
+
     let automation_dir = script_path
         .parent()
         .ok_or_else(|| "Không xác định được thư mục automation".to_string())?
         .to_path_buf();
 
+    eprintln!("[automation] script_path = {}", script_path.display());
+    eprintln!("[automation] automation_dir = {}", automation_dir.display());
+
     // Spawn node process from the automation directory so local dependencies resolve correctly.
-    let output = StdCommand::new("node")
-        .arg(&script_path)
+    let node_modules_path = find_node_modules(&automation_dir);
+
+    let mut cmd = StdCommand::new("node");
+    cmd.arg(&script_path)
         .arg(&action)
         .arg(&payload)
-        .current_dir(&automation_dir)
-        .env("NODE_PATH", find_node_modules(&automation_dir))
+        .current_dir(&automation_dir);
+
+    // CRITICAL: Only set NODE_PATH when we have a valid, non-empty path.
+    // Setting NODE_PATH="" on Windows Node.js v24 causes it to resolve to the
+    // drive root (e.g. "C:"), triggering EISDIR errors during module resolution.
+    if !node_modules_path.is_empty() {
+        eprintln!("[automation] NODE_PATH = {}", node_modules_path);
+        cmd.env("NODE_PATH", &node_modules_path);
+    } else {
+        eprintln!("[automation] NODE_PATH not set (no node_modules found)");
+        // Remove NODE_PATH from environment to avoid inheriting a bad value
+        cmd.env_remove("NODE_PATH");
+    }
+
+    let output = cmd
         .output()
         .map_err(|e| format!("Không thể chạy node: {}", e))?;
 
