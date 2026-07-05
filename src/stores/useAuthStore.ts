@@ -62,91 +62,20 @@ function applySubscription(subscription: SubscriptionInfo | null) {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: null,
-      token: null,
-      subscriptionStatus: 'inactive',
+      user: { id: 'local-user', name: 'Admin', email: 'admin@local' },
+      token: 'local-token',
+      subscriptionStatus: 'active',
       subscriptionEndsAt: null,
 
-      login: async (email: string, password: string) => {
-        if (!email.trim() || !password.trim()) {
-          throw new Error('Vui lòng nhập email và mật khẩu');
-        }
+      login: async () => {},
+      register: async () => {},
+      forgotPassword: async () => ({ success: true, message: 'Not needed' }),
+      logout: () => {},
+      refreshSubscription: async () => {},
+      validateLicense: async () => true,
 
-        const data = await apiRequest<AuthApiResponse>('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-        });
-
-        set({
-          user: data.user,
-          token: data.token,
-          ...applySubscription(data.subscription),
-        });
-      },
-
-      register: async (name: string, email: string, password: string) => {
-        if (!name.trim() || !email.trim() || password.length < 6) {
-          throw new Error('Vui lòng nhập đủ thông tin, mật khẩu tối thiểu 6 ký tự');
-        }
-
-        const data = await apiRequest<AuthApiResponse>('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        set({
-          user: data.user,
-          token: data.token,
-          ...applySubscription(data.subscription),
-        });
-      },
-
-      forgotPassword: async (email: string) => {
-        if (!email.trim()) {
-          throw new Error('Vui lòng nhập email');
-        }
-
-        const data = await apiRequest<{ success: boolean; message: string }>('/auth/forgot-password', {
-          method: 'POST',
-          body: JSON.stringify({ email }),
-        });
-
-        return data;
-      },
-
-      logout: () => {
-        set({ user: null, token: null, subscriptionStatus: 'inactive', subscriptionEndsAt: null });
-      },
-
-      refreshSubscription: async () => {
-        const token = get().token;
-        if (!token) return;
-
-        const data = await apiRequest<SubscriptionApiResponse>('/subscription/me', { method: 'GET' }, token);
-        set(applySubscription(data.subscription));
-      },
-
-      validateLicense: async () => {
-        const token = get().token;
-        if (!token) return false;
-
-        const data = await apiRequest<SubscriptionApiResponse>('/license/validate', {
-          method: 'POST',
-          body: JSON.stringify({ deviceName: navigator.userAgent }),
-        }, token);
-
-        set(applySubscription(data.subscription));
-        return Boolean(data.active);
-      },
-
-      isAuthenticated: () => Boolean(get().user && get().token),
-
-      hasActiveSubscription: () => {
-        const { subscriptionStatus, subscriptionEndsAt } = get();
-        if (subscriptionStatus !== 'active') return false;
-        if (!subscriptionEndsAt) return true;
-        return new Date(subscriptionEndsAt).getTime() > Date.now();
-      },
+      isAuthenticated: () => true,
+      hasActiveSubscription: () => true,
     }),
     { name: 'autopost-auth' }
   )

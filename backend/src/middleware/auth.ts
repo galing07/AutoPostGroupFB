@@ -18,18 +18,12 @@ export function signAccessToken(user: { id: string; email: string; role: string 
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
 
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Missing bearer token' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as AuthRequest['user'];
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ success: false, error: 'Invalid or expired token' });
-  }
+  // Bypass authentication and attach a dummy user for local usage
+  req.user = {
+    id: 'local-user',
+    email: 'admin@local',
+    role: 'admin',
+  };
+  next();
 }

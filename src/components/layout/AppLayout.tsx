@@ -15,8 +15,7 @@ import { HistoryPage } from '@/pages/History';
 import { ActivityLog } from '@/pages/ActivityLog';
 import { SettingsPage } from '@/pages/Settings';
 
-import { LoginPage } from '@/pages/Login';
-import { useAuthStore } from '@/stores/useAuthStore';
+
 
 const pages: Record<PageId, React.ComponentType> = {
   dashboard: Dashboard,
@@ -32,16 +31,12 @@ const pages: Record<PageId, React.ComponentType> = {
 export function AppLayout() {
   const [currentPage, setCurrentPage] = useState<PageId>('dashboard');
   const { isDark } = useThemeStore();
-  const { isAuthenticated, hasActiveSubscription } = useAuthStore();
 
   // Apply dark mode on mount
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
-  if (!isAuthenticated() || !hasActiveSubscription()) {
-    return <LoginPage />;
-  }
 
   const PageComponent = pages[currentPage];
 
