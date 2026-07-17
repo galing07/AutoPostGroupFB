@@ -38,10 +38,7 @@ export function Dashboard() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const postsTodayCount = entries.filter((e) => e.timestamp.startsWith(todayStr)).length || postsToday;
   const successEntries = entries.filter((e) => e.status === 'success');
-  const successRate =
-    entries.length > 0
-      ? Math.round((successEntries.length / entries.length) * 100)
-      : 0;
+  const successRate = entries.length > 0 ? Math.round((successEntries.length / entries.length) * 100) : 0;
 
   // Recent activity from logs (latest 5)
   const recentLogs = [...logs].reverse().slice(0, 6);
