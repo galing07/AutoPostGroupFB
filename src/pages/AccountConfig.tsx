@@ -36,14 +36,15 @@ export function AccountConfig() {
       const result = await executeAction('check_session', {
         chromePath: chromePath || undefined,
       });
+
       if (result.success) {
         setSessionStatus(result.isLoggedIn ? 'logged_in' : 'not_logged_in');
         if (!silent) {
-          toast.success(result.isLoggedIn ? 'Đã đăng nhập Facebook!' : 'Chưa đăng nhập Facebook');
+          toast.success(result.isLoggedIn ? 'Facebook sudah login!' : 'Belum login Facebook');
         }
       } else {
         setSessionStatus('unknown');
-        if (!silent) toast.error(result.error || 'Không thể kiểm tra session');
+        if (!silent) toast.error(result.error || 'Tidak bisa memeriksa session');
       }
     } catch {
       setSessionStatus('unknown');
@@ -57,19 +58,20 @@ export function AccountConfig() {
       const result = await executeAction('open_chrome', {
         chromePath: chromePath || undefined,
       });
+
       if (result.success) {
         if (result.isLoggedIn) {
           setSessionStatus('logged_in');
-          toast.success('Chrome đã mở — Facebook đã đăng nhập sẵn! ✅');
+          toast.success('Chrome dibuka — Facebook sudah login siap! ✅');
         } else {
           setSessionStatus('not_logged_in');
-          toast.info('Chrome đã mở — hãy đăng nhập Facebook trong cửa sổ vừa mở');
+          toast.info('Chrome dibuka — silakan login Facebook di jendela yang muncul');
         }
       } else {
-        toast.error(result.error || 'Không thể mở Chrome');
+        toast.error(result.error || 'Tidak bisa membuka Chrome');
       }
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(`Kesalahan: ${err.message}`);
     }
     setOpeningChrome(false);
   };
@@ -79,40 +81,44 @@ export function AccountConfig() {
       <div>
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
           <MonitorCog className="w-5 h-5 text-primary" />
-          Cấu hình Chrome Profile
+          Konfigurasi Chrome Profile
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          App dùng Chrome persistent profile — bạn đăng nhập Facebook một lần, app sẽ nhớ mãi.
+          Aplikasi menggunakan Chrome persistent profile — Anda login Facebook sekali saja, aplikasi akan ingat selamanya.
         </p>
       </div>
 
       {/* Session Status */}
-      <Card className={
-        sessionStatus === 'logged_in'
-          ? 'border-emerald-500/30 bg-emerald-500/5'
-          : sessionStatus === 'not_logged_in'
-          ? 'border-amber-500/30 bg-amber-500/5'
-          : 'border-border'
-      }>
+      <Card
+        className={
+          sessionStatus === 'logged_in'
+            ? 'border-emerald-500/30 bg-emerald-500/5'
+            : sessionStatus === 'not_logged_in'
+            ? 'border-amber-500/30 bg-amber-500/5'
+            : 'border-border'
+        }
+      >
         <CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {sessionStatus === 'logged_in' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
               {sessionStatus === 'not_logged_in' && <XCircle className="w-6 h-6 text-amber-500" />}
               {sessionStatus === 'unknown' && <AlertTriangle className="w-6 h-6 text-muted-foreground" />}
+
               <div>
                 <p className="text-sm font-semibold">
-                  {sessionStatus === 'logged_in' && 'Facebook đã đăng nhập ✅'}
-                  {sessionStatus === 'not_logged_in' && 'Chưa đăng nhập Facebook'}
-                  {sessionStatus === 'unknown' && 'Trạng thái chưa rõ'}
+                  {sessionStatus === 'logged_in' && 'Facebook sudah login ✅'}
+                  {sessionStatus === 'not_logged_in' && 'Belum login Facebook'}
+                  {sessionStatus === 'unknown' && 'Status belum jelas'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {sessionStatus === 'logged_in' && 'Sẵn sàng sử dụng auto post'}
-                  {sessionStatus === 'not_logged_in' && 'Nhấn "Mở Chrome" để đăng nhập'}
-                  {sessionStatus === 'unknown' && 'Nhấn kiểm tra để xem trạng thái'}
+                  {sessionStatus === 'logged_in' && 'Siap untuk digunakan auto post'}
+                  {sessionStatus === 'not_logged_in' && 'Klik "Buka Chrome" untuk login'}
+                  {sessionStatus === 'unknown' && 'Klik cek untuk melihat status'}
                 </p>
               </div>
             </div>
+
             <Button
               variant="outline"
               size="sm"
@@ -125,7 +131,7 @@ export function AccountConfig() {
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              Kiểm tra
+              Cek Status
             </Button>
           </div>
         </CardContent>
@@ -136,10 +142,10 @@ export function AccountConfig() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Info className="w-4 h-4 text-primary" />
-            Cách sử dụng
+            Cara Penggunaan
           </CardTitle>
           <CardDescription className="text-xs">
-            Hướng dẫn thiết lập Chrome Profile lần đầu
+            Petunjuk pengaturan Chrome Profile pertama kali
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,23 +153,23 @@ export function AccountConfig() {
             {[
               {
                 step: '1',
-                title: 'Mở Chrome',
-                desc: 'Nhấn nút bên dưới để mở Chrome với profile riêng của app',
+                title: 'Buka Chrome',
+                desc: 'Klik tombol di bawah untuk membuka Chrome dengan profile khusus aplikasi',
               },
               {
                 step: '2',
-                title: 'Đăng nhập Facebook',
-                desc: 'Trong cửa sổ Chrome vừa mở, đăng nhập tài khoản Facebook của bạn như bình thường',
+                title: 'Login Facebook',
+                desc: 'Di jendela Chrome yang muncul, login akun Facebook Anda seperti biasa',
               },
               {
                 step: '3',
-                title: 'Đóng Chrome',
-                desc: 'Sau khi đăng nhập xong, có thể đóng Chrome. Session sẽ được lưu lại',
+                title: 'Tutup Chrome',
+                desc: 'Setelah login selesai, Anda bisa menutup Chrome. Session akan disimpan',
               },
               {
                 step: '4',
-                title: 'Bắt đầu Auto Post',
-                desc: 'Từ lần sau, app tự động dùng session đã lưu — không cần đăng nhập lại',
+                title: 'Mulai Auto Post',
+                desc: 'Dari sekarang, aplikasi akan otomatis menggunakan session yang tersimpan — tidak perlu login lagi',
               },
             ].map((item) => (
               <li key={item.step} className="flex items-start gap-3">
@@ -185,10 +191,10 @@ export function AccountConfig() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Globe className="w-4 h-4 text-primary" />
-            Mở Chrome
+            Buka Chrome
           </CardTitle>
           <CardDescription className="text-xs">
-            Chrome sẽ mở với profile riêng lưu tại <code className="text-[11px] bg-muted px-1 rounded">~/.autopost/chrome-profile</code>
+            Chrome akan dibuka dengan profile khusus yang disimpan di <code className="text-[11px] bg-muted px-1 rounded">~/.autopost/chrome-profile</code>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -203,11 +209,12 @@ export function AccountConfig() {
             ) : (
               <MonitorCog className="w-5 h-5" />
             )}
-            {openingChrome ? 'Đang mở Chrome...' : 'Mở Chrome & Đăng nhập Facebook'}
+            {openingChrome ? 'Sedang membuka Chrome...' : 'Buka Chrome & Login Facebook'}
           </Button>
+
           {sessionStatus === 'logged_in' && (
             <p className="text-xs text-emerald-500 text-center">
-              ✅ Đã có session — bạn có thể bắt đầu auto post ngay!
+              ✅ Sudah ada session — Anda bisa langsung mulai auto post!
             </p>
           )}
         </CardContent>
@@ -218,10 +225,10 @@ export function AccountConfig() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-primary" />
-            Chrome Path tùy chỉnh (không bắt buộc)
+            Lokasi Chrome Tersesuaikan (tidak wajib)
           </CardTitle>
           <CardDescription className="text-xs">
-            Để trống nếu Chrome đặt ở vị trí mặc định. Chỉ cần điền nếu Chrome không tự tìm được.
+            Kosongkan jika Chrome berada di lokasi default. Hanya diisi jika Chrome tidak ditemukan otomatis.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -240,12 +247,13 @@ export function AccountConfig() {
                 className="text-xs text-muted-foreground"
                 onClick={() => setChromePath('')}
               >
-                Xóa
+                Hapus
               </Button>
             )}
           </div>
+
           <p className="text-[11px] text-muted-foreground mt-2">
-            macOS mặc định: <code>/Applications/Google Chrome.app/Contents/MacOS/Google Chrome</code>
+            Default macOS: <code>/Applications/Google Chrome.app/Contents/MacOS/Google Chrome</code>
           </p>
         </CardContent>
       </Card>
