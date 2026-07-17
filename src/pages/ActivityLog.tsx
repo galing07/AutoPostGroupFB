@@ -30,7 +30,7 @@ export function ActivityLog() {
 
   const handleExport = () => {
     if (entries.length === 0) {
-      toast.info('Không có log để export');
+      toast.info('Tidak ada log untuk diekspor');
       return;
     }
     const text = entries
@@ -43,12 +43,12 @@ export function ActivityLog() {
     a.download = `log_${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Đã export log!');
+    toast.success('Log berhasil diekspor!');
   };
 
   const handleClear = () => {
     clearLogs();
-    toast.info('Đã xóa log');
+    toast.info('Log berhasil dihapus');
   };
 
   const infoCount = entries.filter((l) => l.level === 'info').length;
@@ -61,25 +61,33 @@ export function ActivityLog() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-            <ScrollText className="w-5 h-5 text-primary" />Activity Log
+            <ScrollText className="w-5 h-5 text-primary" />Log Aktivitas
           </h2>
-          <p className="text-sm text-muted-foreground">{entries.length} entries</p>
+          <p className="text-sm text-muted-foreground">{entries.length} entri</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={handleExport}>
-            <Download className="w-3.5 h-3.5" />Export .txt
+            <Download className="w-3.5 h-3.5" />Ekspor .txt
           </Button>
           <Button variant="outline" size="sm" className="gap-2 text-xs text-destructive" onClick={handleClear}>
-            <Trash2 className="w-3.5 h-3.5" />Clear
+            <Trash2 className="w-3.5 h-3.5" />Hapus Semua
           </Button>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-0 text-xs gap-1"><Info className="w-3 h-3" />{infoCount} Info</Badge>
-        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-0 text-xs gap-1"><CheckCircle2 className="w-3 h-3" />{successCount} Success</Badge>
-        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-0 text-xs gap-1"><AlertTriangle className="w-3 h-3" />{warningCount} Warning</Badge>
-        <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-0 text-xs gap-1"><XCircle className="w-3 h-3" />{errorCount} Error</Badge>
+        <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-0 text-xs gap-1">
+          <Info className="w-3 h-3" />{infoCount} Info
+        </Badge>
+        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-0 text-xs gap-1">
+          <CheckCircle2 className="w-3 h-3" />{successCount} Berhasil
+        </Badge>
+        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-0 text-xs gap-1">
+          <AlertTriangle className="w-3 h-3" />{warningCount} Peringatan
+        </Badge>
+        <Badge variant="secondary" className="bg-red-500/10 text-red-500 border-0 text-xs gap-1">
+          <XCircle className="w-3 h-3" />{errorCount} Kesalahan
+        </Badge>
       </div>
 
       <Card className="overflow-hidden">
@@ -88,8 +96,8 @@ export function ActivityLog() {
             {entries.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <ScrollText className="w-10 h-10 text-white/20 mb-3" />
-                <p className="text-sm text-white/50 font-medium">Chưa có log nào</p>
-                <p className="text-xs text-white/30 mt-1">Khi chạy auto post, log thật sẽ hiển thị tại đây</p>
+                <p className="text-sm text-white/50 font-medium">Belum ada log</p>
+                <p className="text-xs text-white/30 mt-1">Log aktivitas akan muncul di sini saat menjalankan auto post</p>
               </div>
             ) : (
               <div className="space-y-1 log-terminal">
