@@ -7,14 +7,14 @@ import { Globe, Sun, Moon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PAGE_TITLES: Record<string, string> = {
-  dashboard: 'Trang chủ',
-  accounts: 'Chrome Profile',
-  groups: 'Danh sách Nhóm',
-  compose: 'Soạn bài viết AI',
-  autopost: 'Auto Post',
-  history: 'Lịch sử đăng bài',
-  logs: 'Activity Log',
-  settings: 'Cài đặt',
+  dashboard: 'Trang Chủ',
+  accounts: 'Konfigurasi Chrome',
+  groups: 'Daftar Grup',
+  compose: 'Susun Tulisan dengan AI',
+  autopost: 'Jalankan Auto Post',
+  history: 'Riwayat Posting',
+  logs: 'Log Aktivitas',
+  settings: 'Pengaturan',
 };
 
 interface HeaderProps {
@@ -32,17 +32,18 @@ export function Header({ currentPage }: HeaderProps) {
       const result = await executeAction('open_chrome', {
         chromePath: chromePath || undefined,
       });
+
       if (result.success) {
         if (result.isLoggedIn) {
-          toast.success('Chrome đã mở — Facebook đã đăng nhập! ✅');
+          toast.success('Chrome dibuka — Facebook sudah login siap! ✅');
         } else {
-          toast.info('Chrome đã mở — hãy đăng nhập Facebook trong cửa sổ vừa mở');
+          toast.info('Chrome dibuka — silakan login Facebook di jendela yang muncul');
         }
       } else {
-        toast.error(result.error || 'Không thể mở Chrome');
+        toast.error(result.error || 'Tidak bisa membuka Chrome');
       }
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(`Kesalahan: ${err.message}`);
     }
     setOpeningChrome(false);
   };
@@ -71,7 +72,7 @@ export function Header({ currentPage }: HeaderProps) {
           ) : (
             <Globe className="w-3.5 h-3.5" />
           )}
-          {openingChrome ? 'Đang mở...' : 'Mở Chrome'}
+          {openingChrome ? 'Sedang membuka...' : 'Buka Chrome'}
         </Button>
 
         {/* Theme Toggle */}
