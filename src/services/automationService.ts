@@ -1,4 +1,4 @@
-// Automation Service — bridges frontend to Playwright via Rust IPC commands
+// Layanan Otomatisasi — Menghubungkan frontend dengan Playwright melalui perintah IPC Rust
 import { useAuthStore } from '@/stores/useAuthStore';
 import type { PostResult } from '@/stores/useAutoPostStore';
 
@@ -27,7 +27,7 @@ export type ProgressCallback = (index: number, total: number, groupName: string)
 export type ResultCallback = (result: PostResult) => void;
 
 // ═══════════════════════════════════════════════════════════════════
-// Check if running inside Tauri
+// Cek apakah berjalan di dalam Tauri
 // ═══════════════════════════════════════════════════════════════════
 function isTauri(): boolean {
   try {
@@ -38,10 +38,10 @@ function isTauri(): boolean {
 }
 
 function normalizeAutomationError(error: string): string {
-  if (!error) return 'Lỗi không xác định';
+  if (!error) return 'Kesalahan tidak diketahui';
 
   if (error.includes('ProcessSingleton') || error.includes('profile is already in use')) {
-    return 'Chrome profile đang được mở hoặc bị khóa. Hãy đóng cửa sổ Chrome do app mở trước đó rồi thử lại. Nếu vẫn lỗi, chạy: pkill -f ".autopost/chrome-profile"';
+    return 'Profil Chrome sedang digunakan atau terkunci. Tutup dulu jendela Chrome yang dibuka oleh aplikasi, lalu coba lagi. Jika masih error, jalankan: pkill -f ".autopost/chrome-profile"';
   }
 
   if (error.includes('Không tìm thấy automation/index.js')) {
@@ -49,14 +49,14 @@ function normalizeAutomationError(error: string): string {
   }
 
   if (error.includes('Executable doesn\'t exist') || error.includes('ENOENT')) {
-    return 'Không tìm thấy Chrome. Vào Cài đặt hoặc Chrome Profile và kiểm tra lại Chrome Path.';
+    return 'Tidak menemukan Chrome. Buka Pengaturan atau Chrome Profile dan periksa kembali Chrome Path.';
   }
 
   return error;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Execute automation action
+// Jalankan aksi otomatisasi
 // ═══════════════════════════════════════════════════════════════════
 export async function executeAction(
   action: string,
@@ -69,16 +69,17 @@ export async function executeAction(
 ): Promise<IPCMessage> {
   const publicActions = new Set(['test_connection']);
   const auth = useAuthStore.getState();
+  
   if (!publicActions.has(action)) {
     if (!auth.isAuthenticated() || !auth.hasActiveSubscription()) {
-      const error = 'Tài khoản chưa có gói thuê tháng active. Vui lòng đăng nhập và thanh toán/gia hạn để sử dụng automation.';
+      const error = 'Akun belum memiliki paket berlangganan aktif. Silakan login dan bayar/perpanjang untuk menggunakan fitur otomatisasi.';
       callbacks?.onLog?.('error', error);
       return { type: 'IPC_RESPONSE', success: false, error };
     }
 
     const active = await auth.validateLicense().catch(() => false);
     if (!active) {
-      const error = 'Backend báo license không còn active. Vui lòng gia hạn trước khi chạy automation.';
+      const error = 'Backend melaporkan lisensi tidak aktif. Silakan perpanjang sebelum menjalankan otomatisasi.';
       callbacks?.onLog?.('error', error);
       return { type: 'IPC_RESPONSE', success: false, error };
     }
@@ -87,12 +88,12 @@ export async function executeAction(
   if (isTauri()) {
     return executeTauriAction(action, payload, callbacks);
   }
-  // Fallback for browser dev mode only
+  // Fallback untuk mode development di browser
   return executeSimulatedAction(action, payload, callbacks);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Check dependencies (node, playwright)
+// Cek dependensi (node, playwright)
 // ═══════════════════════════════════════════════════════════════════
 export async function checkDependencies(): Promise<{ node: string; hasDeps: boolean }> {
   if (!isTauri()) {
@@ -104,7 +105,7 @@ export async function checkDependencies(): Promise<{ node: string; hasDeps: bool
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Install automation dependencies
+// Instal dependensi otomatisasi
 // ═══════════════════════════════════════════════════════════════════
 export async function installDependencies(): Promise<string> {
   if (!isTauri()) return 'Simulated';
@@ -113,7 +114,7 @@ export async function installDependencies(): Promise<string> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Tauri IPC execution via Rust commands
+// Eksekusi via Tauri IPC (Rust)
 // ═══════════════════════════════════════════════════════════════════
 async function executeTauriAction(
   action: string,
@@ -126,7 +127,7 @@ async function executeTauriAction(
 ): Promise<IPCMessage> {
   const { invoke } = await import('@tauri-apps/api/core');
 
-  callbacks?.onLog?.('info', `Đang thực hiện: ${action}...`);
+  callbacks?.onLog?.('info', `Sedang menjalankan: ${action}...`);
 
   try {
     const payloadStr = JSON.stringify(payload);
@@ -135,9 +136,9 @@ async function executeTauriAction(
       payload: payloadStr,
     });
 
-    // Parse multi-line JSON output from Node.js
+    // Parse output JSON multi-line dari Node.js
     const lines = rawOutput.split('\n').filter((l) => l.trim());
-    let lastResponse: IPCMessage = { type: 'IPC_RESPONSE', success: false, error: 'No response' };
+    let lastResponse: IPCMessage = { type: 'IPC_RESPONSE', success: false, error: 'Tidak ada respons' };
 
     for (const line of lines) {
       try {
@@ -167,20 +168,20 @@ async function executeTauriAction(
             break;
         }
       } catch {
-        // Non-JSON line, ignore
+        // Baris bukan JSON, abaikan
       }
     }
 
     return lastResponse;
   } catch (err: any) {
     const normalized = normalizeAutomationError(err.toString());
-    callbacks?.onLog?.('error', `Lỗi: ${normalized}`);
+    callbacks?.onLog?.('error', `Kesalahan: ${normalized}`);
     return { type: 'IPC_RESPONSE', success: false, error: normalized };
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Simulated execution (for browser dev mode without Tauri)
+// Simulasi eksekusi (untuk mode development di browser)
 // ═══════════════════════════════════════════════════════════════════
 async function executeSimulatedAction(
   action: string,
@@ -191,46 +192,48 @@ async function executeSimulatedAction(
     onResult?: ResultCallback;
   }
 ): Promise<IPCMessage> {
-  callbacks?.onLog?.('info', `[DEV] Action: ${action}`);
+  callbacks?.onLog?.('info', `[DEV] Aksi: ${action}`);
   await new Promise((r) => setTimeout(r, 800));
 
   switch (action) {
     case 'test_connection':
-      callbacks?.onLog?.('success', 'Playwright sẵn sàng (dev mode)');
-      return { type: 'IPC_RESPONSE', success: true, message: 'Connection OK (dev mode)' };
+      callbacks?.onLog?.('success', 'Playwright siap (dev mode)');
+      return { type: 'IPC_RESPONSE', success: true, message: 'Koneksi OK (dev mode)' };
 
     case 'open_chrome':
-      callbacks?.onLog?.('success', 'Chrome đã mở (dev mode)');
-      return { type: 'IPC_RESPONSE', success: true, isLoggedIn: false, message: 'Chrome opened (dev mode)' };
+      callbacks?.onLog?.('success', 'Chrome telah dibuka (dev mode)');
+      return { type: 'IPC_RESPONSE', success: true, isLoggedIn: false, message: 'Chrome dibuka (dev mode)' };
 
     case 'check_session':
-      callbacks?.onLog?.('info', 'Kiểm tra session (dev mode)');
-      return { type: 'IPC_RESPONSE', success: true, isLoggedIn: false, message: 'Not logged in (dev mode)' };
+      callbacks?.onLog?.('info', 'Memeriksa sesi (dev mode)');
+      return { type: 'IPC_RESPONSE', success: true, isLoggedIn: false, message: 'Belum login (dev mode)' };
 
     case 'scan_groups':
-      callbacks?.onLog?.('info', 'Đang quét nhóm...');
+      callbacks?.onLog?.('info', 'Sedang memindai grup...');
       await new Promise((r) => setTimeout(r, 2000));
-      return { type: 'IPC_RESPONSE', success: false, error: 'Cần chạy trong Tauri app để quét nhóm thực' };
+      return { type: 'IPC_RESPONSE', success: false, error: 'Harus dijalankan di aplikasi Tauri untuk memindai grup' };
 
     case 'auto_post': {
       const groups = payload.groups || [];
       for (let i = 0; i < groups.length; i++) {
         const g = groups[i];
         callbacks?.onProgress?.(i + 1, groups.length, g.name);
-        callbacks?.onLog?.('info', `[${i + 1}/${groups.length}] Đang đăng: ${g.name}`);
+        callbacks?.onLog?.('info', `[${i + 1}/${groups.length}] Sedang posting: ${g.name}`);
         await new Promise((r) => setTimeout(r, 1500));
         callbacks?.onResult?.({
-          groupId: g.id, groupName: g.name, groupUrl: g.url,
+          groupId: g.id, 
+          groupName: g.name, 
+          groupUrl: g.url,
           status: 'failed',
-          message: 'Cần chạy trong Tauri app',
+          message: 'Harus dijalankan di aplikasi Tauri',
           timestamp: new Date().toISOString(),
         });
-        callbacks?.onLog?.('error', `${g.name}: Cần Tauri để chạy thực`);
+        callbacks?.onLog?.('error', `${g.name}: Harus menggunakan Tauri untuk menjalankan otomatisasi`);
       }
-      return { type: 'IPC_RESPONSE', success: false, error: 'Chạy trong Tauri app để sử dụng auto post thực' };
+      return { type: 'IPC_RESPONSE', success: false, error: 'Jalankan di aplikasi Tauri untuk menggunakan auto post' };
     }
 
     default:
-      return { type: 'IPC_RESPONSE', success: false, error: `Unknown action: ${action}` };
+      return { type: 'IPC_RESPONSE', success: false, error: `Aksi tidak dikenal: ${action}` };
   }
 }
