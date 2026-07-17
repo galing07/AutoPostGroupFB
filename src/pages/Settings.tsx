@@ -19,7 +19,7 @@ export function SettingsPage() {
     const a = document.createElement('a');
     a.href = url; a.download = 'autopost_config.json';
     a.click(); URL.revokeObjectURL(url);
-    toast.success('Đã export cấu hình!');
+    toast.success('Konfigurasi telah diekspor.!');
   };
 
   const handleImport = () => {
@@ -31,7 +31,7 @@ export function SettingsPage() {
       const reader = new FileReader();
       reader.onload = (ev) => {
         settings.importConfig(ev.target?.result as string);
-        toast.success('Đã import cấu hình!');
+        toast.success('Konfigurasi telah diimpor.!');
       };
       reader.readAsText(file);
     };
@@ -44,14 +44,14 @@ export function SettingsPage() {
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />Cài đặt
         </h2>
-        <p className="text-sm text-muted-foreground">Cấu hình ứng dụng AutoPost FB AI Pro</p>
+        <p className="text-sm text-muted-foreground">Konfigurasi aplikasi AutoPost FB AI Pro</p>
       </div>
 
       {/* AI Config */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2"><Key className="w-4 h-4 text-primary" />AI API</CardTitle>
-          <CardDescription className="text-xs">Cấu hình API key cho AI viết lại nội dung</CardDescription>
+          <CardDescription className="text-xs">Konfigurasikan kunci API untuk penulisan ulang konten berbasis AI</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
