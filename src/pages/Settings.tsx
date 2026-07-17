@@ -42,7 +42,7 @@ export function SettingsPage() {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-          <Settings className="w-5 h-5 text-primary" />Cài đặt
+          <Settings className="w-5 h-5 text-primary" />Pengaturan
         </h2>
         <p className="text-sm text-muted-foreground">Konfigurasi aplikasi AutoPost FB AI Pro</p>
       </div>
@@ -92,7 +92,7 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Bật Proxy</Label>
+            <Label className="text-xs">Aktifkan Proxy</Label>
             <Switch checked={settings.proxy.enabled} onCheckedChange={(v) => settings.setProxy({ enabled: v })} />
           </div>
           {settings.proxy.enabled && (
@@ -130,15 +130,15 @@ export function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label className="text-xs">Delay min (phút)</Label>
+              <Label className="text-xs">Delay min (menit)</Label>
               <Input type="number" value={settings.defaultMinDelay} onChange={(e) => settings.setDefaultMinDelay(Number(e.target.value))} className="h-9 text-xs" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Delay max (phút)</Label>
+              <Label className="text-xs">Delay max (menit)</Label>
               <Input type="number" value={settings.defaultMaxDelay} onChange={(e) => settings.setDefaultMaxDelay(Number(e.target.value))} className="h-9 text-xs" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Giới hạn/ngày</Label>
+              <Label className="text-xs">Batas harian</Label>
               <Input type="number" value={settings.defaultDailyLimit} onChange={(e) => settings.setDefaultDailyLimit(Number(e.target.value))} className="h-9 text-xs" />
             </div>
           </div>
@@ -152,11 +152,11 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Bell className="w-3.5 h-3.5 text-muted-foreground" /><Label className="text-xs">Thông báo</Label></div>
+            <div className="flex items-center gap-2"><Bell className="w-3.5 h-3.5 text-muted-foreground" /><Label className="text-xs">Pemberitahuan</Label></div>
             <Switch checked={settings.enableNotifications} onCheckedChange={() => settings.toggleNotifications()} />
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Volume2 className="w-3.5 h-3.5 text-muted-foreground" /><Label className="text-xs">Âm thanh</Label></div>
+            <div className="flex items-center gap-2"><Volume2 className="w-3.5 h-3.5 text-muted-foreground" /><Label className="text-xs">Suara</Label></div>
             <Switch checked={settings.enableSound} onCheckedChange={() => settings.toggleSound()} />
           </div>
         </CardContent>
