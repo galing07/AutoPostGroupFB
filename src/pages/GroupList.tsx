@@ -70,7 +70,7 @@ export function GroupList() {
 
   const handleAddBulk = () => {
     if (!bulkLinks.trim()) {
-      toast.error('Vui lòng nhập link nhóm');
+      toast.error('Silakan masukkan link grup');
       return;
     }
     const urls = bulkLinks
@@ -80,7 +80,7 @@ export function GroupList() {
     addGroups(urls);
     setBulkLinks('');
     setShowAddPanel(false);
-    toast.success(`Đã thêm ${urls.length} nhóm`);
+    toast.success(`Berhasil menambahkan ${urls.length} grup`);
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +94,7 @@ export function GroupList() {
         .map((l) => l.trim())
         .filter((l) => l.startsWith('http'));
       addGroups(urls);
-      toast.success(`Đã import ${urls.length} nhóm từ file`);
+      toast.success(`Berhasil import ${urls.length} grup dari file`);
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -105,12 +105,11 @@ export function GroupList() {
     try {
       const result = await executeAction('scan_groups', {
         chromePath: useSettingsStore.getState().chromePath || undefined,
-        // profileDir omitted → automation/index.js uses ~/.autopost/chrome-profile automatically
       });
-
       if (result.success && result.groups) {
         const urls = result.groups.map((g: any) => g.url);
         addGroups(urls);
+
         // Update group names and status
         setTimeout(() => {
           const currentGroups = useGroupStore.getState().groups;
@@ -125,12 +124,13 @@ export function GroupList() {
             }
           });
         }, 100);
-        toast.success(`Đã quét xong! Tìm thấy ${result.groups.length} nhóm`);
+
+        toast.success(`Selesai! Ditemukan ${result.groups.length} grup`);
       } else {
-        toast.error(result.error || 'Quét nhóm thất bại');
+        toast.error(result.error || 'Pemindaian grup gagal');
       }
     } catch (err: any) {
-      toast.error(`Lỗi: ${err.message}`);
+      toast.error(`Kesalahan: ${err.message}`);
     }
     setScanning(false);
   };
@@ -144,12 +144,12 @@ export function GroupList() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
-            Danh sách Nhóm Facebook
+            Daftar Grup Facebook
           </h2>
           <p className="text-sm text-muted-foreground">
-            Quản lý {groups.length} nhóm •{' '}
+            Mengelola {groups.length} grup •{' '}
             <span className="text-primary font-medium">
-              {selectedGroups.length} đã chọn
+              {selectedGroups.length} dipilih
             </span>
           </p>
         </div>
@@ -166,8 +166,9 @@ export function GroupList() {
             ) : (
               <ScanSearch className="w-3.5 h-3.5" />
             )}
-            Quét nhóm đã tham gia
+            Scan Grup yang Bergabung
           </Button>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -182,15 +183,16 @@ export function GroupList() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="w-3.5 h-3.5" />
-            Import .txt
+            Impor .txt
           </Button>
+
           <Button
             size="sm"
             className="gap-2 text-xs"
             onClick={() => setShowAddPanel(!showAddPanel)}
           >
             <Plus className="w-3.5 h-3.5" />
-            Thêm nhóm
+            Tambah Grup
           </Button>
         </div>
       </div>
@@ -199,14 +201,14 @@ export function GroupList() {
       {showAddPanel && (
         <Card className="animate-fade-up">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Thêm nhóm mới</CardTitle>
+            <CardTitle className="text-sm">Tambah Grup Baru</CardTitle>
             <CardDescription className="text-xs">
-              Nhập mỗi link nhóm một dòng
+              Masukkan setiap link grup di baris baru
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Textarea
-              placeholder={`https://www.facebook.com/groups/example1\nhttps://www.facebook.com/groups/example2\nhttps://www.facebook.com/groups/example3`}
+              placeholder={`https://www.facebook.com/groups/contoh1\nhttps://www.facebook.com/groups/contoh2`}
               value={bulkLinks}
               onChange={(e) => setBulkLinks(e.target.value)}
               rows={5}
@@ -218,10 +220,10 @@ export function GroupList() {
                 size="sm"
                 onClick={() => setShowAddPanel(false)}
               >
-                Hủy
+                Batal
               </Button>
               <Button size="sm" onClick={handleAddBulk}>
-                Thêm nhóm
+                Tambah Grup
               </Button>
             </div>
           </CardContent>
@@ -235,12 +237,13 @@ export function GroupList() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Tìm kiếm nhóm..."
+            placeholder="Cari grup..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9 text-xs"
           />
         </div>
+
         <Select
           value={filterStatus}
           onValueChange={(v) =>
@@ -248,15 +251,16 @@ export function GroupList() {
           }
         >
           <SelectTrigger className="w-[160px] h-9 text-xs">
-            <SelectValue placeholder="Lọc trạng thái" />
+            <SelectValue placeholder="Filter status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tất cả</SelectItem>
-            <SelectItem value="joined">Đã tham gia</SelectItem>
-            <SelectItem value="pending">Đang chờ</SelectItem>
-            <SelectItem value="unknown">Chưa rõ</SelectItem>
+            <SelectItem value="all">Semua</SelectItem>
+            <SelectItem value="joined">Sudah Bergabung</SelectItem>
+            <SelectItem value="pending">Menunggu</SelectItem>
+            <SelectItem value="unknown">Tidak Diketahui</SelectItem>
           </SelectContent>
         </Select>
+
         <div className="flex items-center gap-2 ml-auto">
           <Button
             variant="ghost"
@@ -269,7 +273,7 @@ export function GroupList() {
             ) : (
               <CheckSquare className="w-3.5 h-3.5" />
             )}
-            {allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+            {allSelected ? 'Batalkan Pilih Semua' : 'Pilih Semua'}
           </Button>
         </div>
       </div>
@@ -281,10 +285,10 @@ export function GroupList() {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Users className="w-10 h-10 text-muted-foreground/50 mb-3" />
               <p className="text-sm font-medium text-muted-foreground">
-                Chưa có nhóm nào
+                Belum ada grup
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Thêm nhóm hoặc quét nhóm đã tham gia để bắt đầu
+                Tambah grup atau scan grup yang sudah bergabung untuk mulai
               </p>
             </div>
           ) : (
@@ -293,16 +297,16 @@ export function GroupList() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-10" />
                   <TableHead className="text-xs font-semibold">
-                    Tên nhóm
+                    Nama Grup
                   </TableHead>
                   <TableHead className="text-xs font-semibold">
                     Link
                   </TableHead>
                   <TableHead className="text-xs font-semibold">
-                    Trạng thái
+                    Status
                   </TableHead>
                   <TableHead className="text-xs font-semibold w-20">
-                    Hành động
+                    Aksi
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -347,10 +351,10 @@ export function GroupList() {
                         }`}
                       >
                         {group.status === 'joined'
-                          ? 'Đã join'
+                          ? 'Sudah Bergabung'
                           : group.status === 'pending'
-                            ? 'Đang chờ'
-                            : 'Chưa rõ'}
+                            ? 'Menunggu'
+                            : 'Tidak Diketahui'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -361,7 +365,7 @@ export function GroupList() {
                         onClick={(e) => {
                           e.stopPropagation();
                           removeGroup(group.id);
-                          toast.info('Đã xóa nhóm');
+                          toast.info('Grup berhasil dihapus');
                         }}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -379,15 +383,15 @@ export function GroupList() {
       {groups.length > 0 && (
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>
-            Tổng: <strong className="text-foreground">{groups.length}</strong>{' '}
-            nhóm
+            Total: <strong className="text-foreground">{groups.length}</strong>{' '}
+            grup
           </span>
           <span>
-            Đã chọn:{' '}
+            Dipilih:{' '}
             <strong className="text-primary">{selectedGroups.length}</strong>
           </span>
           <span>
-            Đã join:{' '}
+            Sudah bergabung:{' '}
             <strong className="text-emerald-500">
               {groups.filter((g) => g.status === 'joined').length}
             </strong>
