@@ -75,7 +75,7 @@ export function SettingsPage() {
       {/* Browser Config */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Globe2 className="w-4 h-4 text-primary" />Trình duyệt</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Globe2 className="w-4 h-4 text-primary" />Peramban</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -125,7 +125,7 @@ export function SettingsPage() {
       {/* Default Settings */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-primary" />Mặc định</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-primary" />Bawaan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
@@ -148,7 +148,7 @@ export function SettingsPage() {
       {/* Notifications */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-primary" />Thông báo</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-primary" />Pemberitahuan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
