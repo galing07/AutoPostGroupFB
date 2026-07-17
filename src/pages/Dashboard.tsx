@@ -48,33 +48,33 @@ export function Dashboard() {
 
   const stats = [
     {
-      title: 'Tổng bài đã đăng',
+      title: 'Total postingan yang diterbitkan',
       value: totalPosts.toString(),
-      sub: totalPosts === 0 ? 'Chưa đăng bài nào' : `${successEntries.length} thành công`,
+      sub: totalPosts === 0 ? 'Belum ada postingan.' : `${successEntries.length} kesuksesan,
       icon: Send,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
     },
     {
-      title: 'Nhóm đã thêm',
+      title: 'Kelompok tersebut telah menambahkan',
       value: totalGroups.toString(),
-      sub: totalGroups === 0 ? 'Chưa có nhóm' : `${groups.filter((g) => g.isSelected).length} đang chọn`,
+      sub: totalGroups === 0 ? 'Belum ada grup' : `${groups.filter((g) => g.isSelected).length} sedang memilih,
       icon: Users,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10',
     },
     {
-      title: 'Bài hôm nay',
+      title: 'Pelajaran hari ini',
       value: postsTodayCount.toString(),
-      sub: dailyLimit > 0 ? `${dailyProgress}% daily limit` : 'Không giới hạn',
+      sub: dailyLimit > 0 ? `${dailyProgress}% daily limit` : 'Tak terbatas',
       icon: CalendarCheck,
       color: 'text-violet-500',
       bg: 'bg-violet-500/10',
     },
     {
-      title: 'Tỷ lệ thành công',
+      title: 'Tingkat keberhasilan',
       value: entries.length === 0 ? '—' : `${successRate}%`,
-      sub: entries.length === 0 ? 'Chưa có dữ liệu' : `Trên ${entries.length} bài`,
+      sub: entries.length === 0 ? 'Tidak ada data yang tersedia' : Pada ${entries.length} pelajaran,
       icon: TrendingUp,
       color: 'text-amber-500',
       bg: 'bg-amber-500/10',
@@ -91,14 +91,14 @@ export function Dashboard() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground max-w-lg">
             {totalGroups === 0 ? (
-              <>Bắt đầu bằng cách thêm nhóm Facebook và mở Chrome để đăng nhập.</>
+              <>Mulailah dengan menambahkan grup Facebook dan membuka Chrome untuk masuk.</>
             ) : (
               <>
-                Hệ thống sẵn sàng với{' '}
-                <span className="text-primary font-medium">{totalGroups} nhóm</span> được
-                cấu hình.{' '}
+                Sistem ini siap dengan{' '}
+                <span className="text-primary font-medium">{totalGroups} kelompok</span> Oke
+                konfigurasi.{' '}
                 {postsTodayCount > 0 && (
-                  <span>Đã đăng <span className="text-emerald-400 font-medium">{postsTodayCount} bài</span> hôm nay.</span>
+                  <span>Dipublikasikan <span className="text-emerald-400 font-medium">{postsTodayCount} pos</span> Hari ini.</span>
                 )}
               </>
             )}
@@ -152,19 +152,19 @@ export function Dashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              Hoạt động gần đây
+              Aktivitas terkini
             </CardTitle>
             <CardDescription className="text-xs">
-              Log thực từ hệ thống auto post
+              Log mentah dari sistem auto post
             </CardDescription>
           </CardHeader>
           <CardContent>
             {recentLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <AlertCircle className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                <p className="text-xs text-muted-foreground">Chưa có hoạt động nào</p>
+                <p className="text-xs text-muted-foreground">Belum ada aktivitas.</p>
                 <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  Bắt đầu auto post để xem log tại đây
+                  Mulai posting otomatis untuk melihat log di sini.
                 </p>
               </div>
             ) : (
@@ -203,16 +203,16 @@ export function Dashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">
-              Trạng thái hệ thống
+              Status sistem
             </CardTitle>
             <CardDescription className="text-xs">
-              Cấu hình hiện tại
+              Konfigurasi saat ini
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Nhóm đã thêm</span>
+                <span className="text-xs text-muted-foreground">Kelompok tersebut telah menambahkan</span>
                 <Badge
                   variant="secondary"
                   className={`border-0 text-[10px] ${totalGroups > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}
@@ -235,7 +235,7 @@ export function Dashboard() {
                   variant="secondary"
                   className={`border-0 text-[10px] ${settings.aiApiKey ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'}`}
                 >
-                  {settings.aiApiKey ? 'Đã cấu hình' : 'Chưa có'}
+                  {settings.aiApiKey ? 'Dikonfigurasi' : 'Belum ada'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
@@ -244,11 +244,11 @@ export function Dashboard() {
                   variant="secondary"
                   className={`border-0 text-[10px] ${settings.proxy.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-muted text-muted-foreground'}`}
                 >
-                  {settings.proxy.enabled ? 'Bật' : 'Tắt'}
+                  {settings.proxy.enabled ? 'ON' : 'OFF'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Giới hạn hôm nay</span>
+                <span className="text-xs text-muted-foreground">Batas hari ini</span>
                 <span className="text-xs font-medium">{postsTodayCount} / {dailyLimit}</span>
               </div>
             </div>
