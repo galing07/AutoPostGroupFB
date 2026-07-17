@@ -42,6 +42,7 @@ export function AutoPost() {
 
   const groups = useGroupStore((s) => s.groups);
   const selectedGroups = useMemo(() => groups.filter((g) => g.isSelected), [groups]);
+
   const addLog = useLogStore((s) => s.addLog);
   const postContent = usePostStore((s) => s.aiRewrittenContent || s.imageCaption || s.originalContent);
   const media = usePostStore((s) => s.media);
@@ -53,24 +54,32 @@ export function AutoPost() {
     () => media.filter((m) => m.path?.startsWith('blob:')).length,
     [media]
   );
+
   const chromePath = useSettingsStore((s) => s.chromePath);
   const isRunning = status === 'running';
 
   const handleStart = async () => {
-    if (selectedGroups.length === 0) { toast.error('Vui lòng chọn nhóm để đăng bài'); return; }
-    if (!postContent.trim()) { toast.error('Vui lòng soạn nội dung bài viết trước'); return; }
+    if (selectedGroups.length === 0) {
+      toast.error('Silakan pilih grup untuk diposting');
+      return;
+    }
+    if (!postContent.trim()) {
+      toast.error('Silakan buat isi posting sebelumnya');
+      return;
+    }
 
     const total = groupsPerRun > 0 ? Math.min(groupsPerRun, selectedGroups.length) : selectedGroups.length;
     const groupsToPost = selectedGroups.slice(0, total);
-    startSession(total);
-    addLog('info', `Bắt đầu auto post cho ${total} nhóm`);
-    addLog('info', `Media gửi sang automation: ${mediaFiles.length} file${mediaFiles.length ? ` — ${mediaFiles.join(', ')}` : ''}`);
-    if (ignoredBlobMedia > 0) {
-      addLog('warning', `Có ${ignoredBlobMedia} ảnh dạng blob preview bị bỏ qua vì không phải đường dẫn file local. Hãy dùng ảnh AI đã tạo/lưu local hoặc cần thêm chức năng chọn file native.`);
-      toast.warning('Ảnh preview dạng blob không upload được. Hãy dùng ảnh AI đã lưu local.');
-    }
-    toast.success('Đã bắt đầu Auto Post!');
 
+    startSession(total);
+    addLog('info', `Mulai auto post untuk ${total} grup`);
+
+    if (ignoredBlobMedia > 0) {
+      addLog('warning', `Ada ${ignoredBlobMedia} foto preview blob yang dilewatkan karena bukan file lokal. Gunakan foto AI yang sudah disimpan lokal.`);
+      toast.warning('Foto preview blob tidak bisa diupload. Gunakan foto AI yang sudah disimpan lokal.');
+    }
+
+    toast.success('Auto Post dimulai!');
     try {
       const response = await executeAction('auto_post', {
         groups: groupsToPost.map((g) => ({ id: g.id, name: g.name, url: g.url })),
@@ -79,7 +88,6 @@ export function AutoPost() {
         minDelay,
         maxDelay,
         chromePath: chromePath || undefined,
-        // profileDir omitted → automation/index.js uses ~/.autopost/chrome-profile automatically
       }, {
         onLog: (level, message) => addLog(level as any, message),
         onProgress: (index, _total, groupName) => updateProgress(index, groupName),
@@ -87,25 +95,25 @@ export function AutoPost() {
       });
 
       if (!response.success) {
-        throw new Error(response.error || response.message || 'Automation chạy thất bại nhưng không trả về lỗi chi tiết');
+        throw new Error(response.error || response.message || 'Otomasi gagal berjalan');
       }
 
       if (useAutoPostStore.getState().status === 'running') {
         setStatus('completed');
-        addLog('success', 'Hoàn tất auto post!');
-        toast.success('Auto Post hoàn tất!');
+        addLog('success', 'Auto post selesai!');
+        toast.success('Auto Post selesai!');
       }
     } catch (err: any) {
       setStatus('error');
-      addLog('error', `Lỗi: ${err.message}`);
-      toast.error(`Lỗi: ${err.message}`);
+      addLog('error', `Kesalahan: ${err.message}`);
+      toast.error(`Kesalahan: ${err.message}`);
     }
   };
 
   const handleStop = () => {
     stopSession();
-    addLog('warning', 'Đã dừng auto post');
-    toast.warning('Đã dừng Auto Post!');
+    addLog('warning', 'Auto post dihentikan');
+    toast.warning('Auto Post dihentikan!');
   };
 
   const successCount = results.filter((r) => r.status === 'success').length;
@@ -116,59 +124,66 @@ export function AutoPost() {
     <div className="space-y-6 max-w-5xl">
       <div>
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-          <Rocket className="w-5 h-5 text-primary" />Chạy Auto Post
+          <Rocket className="w-5 h-5 text-primary" />Jalankan Auto Post
         </h2>
         <p className="text-sm text-muted-foreground">
-          Tự động đăng bài lên {selectedGroups.length} nhóm đã chọn
+          Otomatis posting ke {selectedGroups.length} grup yang dipilih
         </p>
       </div>
 
       <div className="flex items-center gap-4">
         {!isRunning ? (
           <Button size="lg" className="gap-3 px-10 h-14 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse-glow" onClick={handleStart} disabled={status === 'completed'}>
-            <Play className="w-6 h-6" />BẮT ĐẦU AUTO POST
+            <Play className="w-6 h-6" />MULAI AUTO POST
           </Button>
         ) : (
           <Button size="lg" variant="destructive" className="gap-3 px-10 h-14 text-base font-bold" onClick={handleStop}>
-            <Square className="w-6 h-6" />DỪNG KHẨN CẤP
+            <Square className="w-6 h-6" />HENTIKAN SEKARANG
           </Button>
         )}
         {status === 'completed' && (
           <Button variant="outline" size="lg" className="gap-2 h-14" onClick={() => resetSession()}>
-            Đăng lại từ đầu
+            Mulai Ulang dari Awal
           </Button>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Cài đặt đăng bài</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Target className="w-4 h-4 text-primary" />Pengaturan Posting
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs">Số nhóm mỗi lần (0 = tất cả)</Label>
+              <Label className="text-xs">Jumlah grup setiap run (0 = semua)</Label>
               <Input type="number" value={groupsPerRun} onChange={(e) => setGroupsPerRun(Number(e.target.value))} className="h-9 text-xs" disabled={isRunning} />
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-xs">Delay tối thiểu (phút)</Label>
+                <Label className="text-xs">Delay minimum (menit)</Label>
                 <Input type="number" value={minDelay} onChange={(e) => setMinDelay(Number(e.target.value))} className="h-9 text-xs" disabled={isRunning} />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Delay tối đa (phút)</Label>
+                <Label className="text-xs">Delay maksimum (menit)</Label>
                 <Input type="number" value={maxDelay} onChange={(e) => setMaxDelay(Number(e.target.value))} className="h-9 text-xs" disabled={isRunning} />
               </div>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-xs">Giới hạn bài/ngày</Label>
+              <Label className="text-xs">Batas harian</Label>
               <Input type="number" value={dailyLimit} onChange={(e) => setDailyLimit(Number(e.target.value))} className="h-9 text-xs" disabled={isRunning} />
             </div>
+
             <div className="space-y-2">
-              <Label className="text-xs">Chế độ</Label>
+              <Label className="text-xs">Mode</Label>
               <Select value={mode} onValueChange={(v) => setMode(v as 'continue' | 'restart')} disabled={isRunning}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="continue">Tiếp tục từ lần trước</SelectItem>
-                  <SelectItem value="restart">Bắt đầu lại từ đầu</SelectItem>
+                  <SelectItem value="continue">Lanjutkan dari sebelumnya</SelectItem>
+                  <SelectItem value="restart">Mulai ulang dari awal</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -176,43 +191,51 @@ export function AutoPost() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Shield className="w-4 h-4 text-primary" />Tiến trình</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />Proses
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Tiến độ</span>
+                <span className="text-muted-foreground">Progres</span>
                 <span className="font-medium">{currentGroupIndex} / {totalGroups}</span>
               </div>
               <Progress value={progress} className="h-3" />
               <p className="text-xs text-muted-foreground text-center">{progress}%</p>
             </div>
+
             {currentGroupName && (
               <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 <div>
-                  <p className="text-xs font-medium">Đang xử lý</p>
+                  <p className="text-xs font-medium">Sedang diproses</p>
                   <p className="text-[11px] text-muted-foreground">{currentGroupName}</p>
                 </div>
               </div>
             )}
+
             <Separator />
+
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center p-2 rounded-lg bg-emerald-500/5">
                 <p className="text-lg font-bold text-emerald-500">{successCount}</p>
-                <p className="text-[10px] text-muted-foreground">Thành công</p>
+                <p className="text-[10px] text-muted-foreground">Berhasil</p>
               </div>
               <div className="text-center p-2 rounded-lg bg-destructive/5">
                 <p className="text-lg font-bold text-destructive">{failedCount}</p>
-                <p className="text-[10px] text-muted-foreground">Thất bại</p>
+                <p className="text-[10px] text-muted-foreground">Gagal</p>
               </div>
               <div className="text-center p-2 rounded-lg bg-primary/5">
                 <p className="text-lg font-bold text-primary">{postsToday}</p>
-                <p className="text-[10px] text-muted-foreground">Hôm nay</p>
+                <p className="text-[10px] text-muted-foreground">Hari ini</p>
               </div>
             </div>
+
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Daily Limit</span>
+                <span className="text-muted-foreground">Batas Harian</span>
                 <span>{postsToday} / {dailyLimit}</span>
               </div>
               <Progress value={(postsToday / dailyLimit) * 100} className="h-1.5" />
@@ -222,12 +245,14 @@ export function AutoPost() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm">📋 Log realtime</CardTitle></CardHeader>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">📋 Log Real-time</CardTitle>
+        </CardHeader>
         <CardContent>
           <ScrollArea className="h-[200px] rounded-lg bg-muted/30 p-3">
             <div className="space-y-1.5 log-terminal">
               {results.length === 0 ? (
-                <p className="text-xs text-muted-foreground/50 text-center py-8">Chờ bắt đầu...</p>
+                <p className="text-xs text-muted-foreground/50 text-center py-8">Menunggu dimulai...</p>
               ) : (
                 results.map((r, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
@@ -245,4 +270,3 @@ export function AutoPost() {
     </div>
   );
 }
-
