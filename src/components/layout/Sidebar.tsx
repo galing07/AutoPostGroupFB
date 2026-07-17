@@ -39,14 +39,14 @@ interface SidebarProps {
 }
 
 const navItems: { id: PageId; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard', label: 'Trang chủ', icon: Home },
+  { id: 'dashboard', label: 'Beranda', icon: Home },
   { id: 'accounts', label: 'Chrome Profile', icon: MonitorCog },
-  { id: 'groups', label: 'Nhóm', icon: Users },
-  { id: 'compose', label: 'Soạn bài AI', icon: Sparkles },
+  { id: 'groups', label: 'Grup', icon: Users },
+  { id: 'compose', label: 'Buat materi AI', icon: Sparkles },
   { id: 'autopost', label: 'Auto Post', icon: Rocket },
-  { id: 'history', label: 'Lịch sử', icon: History },
+  { id: 'history', label: 'Riwayat', icon: History },
   { id: 'logs', label: 'Log', icon: ScrollText },
-  { id: 'settings', label: 'Cài đặt', icon: Settings },
+  { id: 'settings', label: 'Pengaturan', icon: Settings },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
