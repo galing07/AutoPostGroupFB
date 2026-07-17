@@ -1,208 +1,195 @@
-# Build Và Phát Hành App Bằng GitHub Actions
+Build dan Rilis Aplikasi Menggunakan GitHub Actions
 
-Tài liệu này hướng dẫn cách dùng GitHub Actions để tự build file cài đặt cho khách:
+Dokumen ini menjelaskan cara menggunakan GitHub Actions untuk otomatis membangun file installer aplikasi yang siap dikirim ke pelanggan:
 
-- macOS: `.dmg`
-- Windows: `.exe` / `.msi`
-- Có artifact tải về sau mỗi lần build
-- Có GitHub Release khi tạo version tag
+macOS: .dmg
 
----
+Windows: .exe / .msi
 
-## 1. Workflow đã cấu hình
+Tersedia artifact yang bisa diunduh setiap selesai build
 
-Workflow nằm tại:
+Otomatis membuat GitHub Release saat membuat version tag
 
-```text
+1. Workflow yang sudah dikonfigurasi
+
+File workflow berada di:
+
 .github/workflows/build-windows.yml
-```
 
-Tên workflow trên GitHub:
+Nama workflow di GitHub:
 
-```text
 Build Desktop Installers
-```
 
-Workflow chạy khi:
+Workflow akan berjalan ketika:
 
-1. Push lên branch `main`
-2. Push tag dạng `v*`, ví dụ `v1.0.1`
-3. Bấm chạy thủ công trong tab **Actions**
+Push ke branch main
 
----
+Push tag dengan format v*, misalnya v1.0.1
 
-## 2. Cấu hình API production
+Dijalankan manual melalui tab Actions
 
-App cần biết backend VPS ở đâu. Hiện workflow mặc định dùng:
+2. Konfigurasi API production
 
-```text
+Aplikasi perlu mengetahui alamat backend VPS yang digunakan. Saat ini workflow menggunakan:
+
 http://161.248.146.74
-```
 
-Khuyến nghị tạo GitHub Secret để dễ đổi sau này.
+Disarankan menggunakan GitHub Secret agar mudah diganti di kemudian hari.
 
-### Tạo secret trên GitHub
+Membuat secret di GitHub
 
-Vào repo GitHub:
+Masuk ke repository GitHub:
 
-```text
 Settings -> Secrets and variables -> Actions -> New repository secret
-```
 
-Tạo secret:
+Buat secret berikut:
 
-```text
 Name: VITE_API_BASE_URL
 Value: http://161.248.146.74
-```
 
-Nếu sau này có domain HTTPS, đổi value thành:
+Jika nanti sudah menggunakan domain HTTPS, ubah nilainya menjadi:
 
-```text
-https://api.tenmiencuaban.com
-```
+https://api.domainanda.com
 
-> [!IMPORTANT]
-> File app build ra sẽ cố định API URL tại thời điểm build. Nếu đổi VPS/domain, cần build lại app.
+URL API akan tertanam permanen di dalam aplikasi pada saat proses build. Jika VPS atau domain berubah, aplikasi harus dibangun ulang.
 
----
+3. Menjalankan build secara manual
 
-## 3. Chạy build thủ công
+Buka repository GitHub:
 
-Vào GitHub repo:
-
-```text
 Actions -> Build Desktop Installers -> Run workflow
-```
 
-Chọn branch `main`, bấm **Run workflow**.
+Pilih branch main, lalu klik Run workflow.
 
-Sau khi chạy xong, vào workflow run -> **Artifacts** để tải:
+Setelah proses selesai, buka workflow run dan unduh artifact berikut:
 
-```text
 AutoPost-FB-AI-Pro-macOS
 AutoPost-FB-AI-Pro-Windows
-```
+4. Membuat release untuk pelanggan
 
----
+Di komputer lokal, jalankan:
 
-## 4. Tạo release cho khách tải
-
-Khi muốn phát hành bản mới, chạy trên máy local:
-
-```bash
 git add .
 git commit -m "Release desktop installers"
 git push origin main
-```
 
-Tạo version tag:
+Buat tag versi:
 
-```bash
 git tag v1.0.1
 git push origin v1.0.1
-```
 
-GitHub Actions sẽ tự build và tạo release:
+GitHub Actions akan otomatis membangun installer dan membuat release:
 
-```text
 Releases -> AutoPost FB AI Pro v1.0.1
-```
+5. File mana yang dikirim ke pelanggan?
+Pengguna macOS
 
----
+Kirim file:
 
-## 5. Gửi file nào cho khách?
-
-### Khách dùng macOS
-
-Gửi file:
-
-```text
 .dmg
-```
 
-Ví dụ:
+Contoh:
 
-```text
 AutoPost FB AI Pro_1.0.0_aarch64.dmg
-```
+Pengguna Windows
 
-### Khách dùng Windows
+Kirim file:
 
-Gửi file:
-
-```text
 .exe
-```
 
-hoặc nếu workflow tạo `.msi` thì có thể gửi `.msi`.
+atau jika tersedia:
 
----
+.msi
+6. Catatan untuk macOS yang belum ditandatangani (unsigned)
 
-## 6. Lưu ý về macOS chưa ký app
+Jika belum memiliki Apple Developer Account, pengguna Mac mungkin akan melihat peringatan:
 
-Nếu chưa có Apple Developer Account, khách Mac có thể thấy cảnh báo:
-
-```text
 Apple cannot verify developer
-```
 
-Khách mở bằng cách:
+Cara membukanya:
 
-```text
-Right click app -> Open -> Open
-```
+Klik kanan aplikasi -> Open -> Open
 
-Hoặc:
+atau melalui:
 
-```text
 System Settings -> Privacy & Security -> Open Anyway
-```
 
-Muốn hết cảnh báo cần cấu hình thêm:
+Agar peringatan hilang, perlu menambahkan:
 
-- Apple Developer Account
-- Code signing certificate
-- Notarization
+Apple Developer Account
 
----
+Sertifikat code signing
 
-## 7. Checklist trước khi release
+Proses notarization
 
-Trước khi gửi khách, kiểm tra VPS:
+7. Checklist sebelum rilis
 
-```bash
+Pastikan VPS aktif:
+
 curl http://161.248.146.74/health
 curl http://161.248.146.74/payments/plans
-```
 
-Kết quả `/payments/plans` phải có:
+Hasil endpoint /payments/plans harus menampilkan:
 
-```text
 725000
 1225000
 1725000
-```
 
-Sau đó build release bằng tag:
+Jika sudah benar, buat release dengan tag:
 
-```bash
 git tag v1.0.1
 git push origin v1.0.1
-```
+8. Jika build gagal di GitHub
 
----
+Buka tab Actions, pilih workflow yang gagal, lalu lihat step yang berwarna merah.
 
-## 8. Nếu build lỗi trên GitHub
+Error
 
-Vào tab **Actions**, mở run lỗi, xem step màu đỏ.
+	
 
-Lỗi thường gặp:
+Cara mengatasi
 
-| Lỗi | Cách xử lý |
-|---|---|
-| `npm ci` lỗi | Commit `package-lock.json` hoặc workflow sẽ fallback `npm install` |
-| Rust build lỗi | Xem log `Build Tauri app` |
-| Không thấy `.exe` | Kiểm tra Tauri bundle target Windows |
-| Không thấy `.dmg` | Kiểm tra step macOS |
-| App gọi sai API | Kiểm tra secret `VITE_API_BASE_URL` rồi build lại |
+
+
+
+npm ci gagal
+
+	
+
+Pastikan package-lock.json sudah di-commit, atau workflow akan fallback ke npm install
+
+
+
+
+Rust build gagal
+
+	
+
+Periksa log pada step Build Tauri app
+
+
+
+
+Tidak ada file .exe
+
+	
+
+Periksa konfigurasi Tauri bundle target Windows
+
+
+
+
+Tidak ada file .dmg
+
+	
+
+Periksa step build macOS
+
+
+
+
+Aplikasi mengarah ke API yang salah
+
+	
+
+Periksa secret VITE_API_BASE_URL lalu build ulang
