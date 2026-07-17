@@ -42,7 +42,7 @@ const navItems: { id: PageId; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Beranda', icon: Home },
   { id: 'accounts', label: 'Chrome Profile', icon: MonitorCog },
   { id: 'groups', label: 'Grup', icon: Users },
-  { id: 'compose', label: 'Buat materi AI', icon: Sparkles },
+  { id: 'compose', label: 'Buat Postingan AI', icon: Sparkles },
   { id: 'autopost', label: 'Auto Post', icon: Rocket },
   { id: 'history', label: 'Riwayat', icon: History },
   { id: 'logs', label: 'Log', icon: ScrollText },
