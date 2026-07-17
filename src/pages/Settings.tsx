@@ -182,7 +182,7 @@ export function SettingsPage() {
             <Info className="w-4 h-4 text-muted-foreground" />
             <div>
               <p className="text-xs font-medium">AutoPost FB AI Pro v1.0.0</p>
-              <p className="text-[11px] text-muted-foreground">Phần mềm đăng bài Facebook tự động thông minh</p>
+              <p className="text-[11px] text-muted-foreground">Perangkat lunak otomatisasi posting Facebook yang cerdas</p>
             </div>
           </div>
         </CardContent>
